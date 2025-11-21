@@ -7,11 +7,12 @@ use App\Models\Concerns\UsesUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class InventoryLocation extends Model
 {
     //
-    use HasFactory, UsesUuid, BelongsToTenant;
+    use HasFactory, UsesUuid, BelongsToTenant,SoftDeletes;
 
     protected $fillable = [
         'tenant_id',

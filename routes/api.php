@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\InventoryController;
+use App\Http\Controllers\API\InventoryLocationController;
 use App\Http\Controllers\API\StockController;
 use App\Models\Tenant;
 use App\Models\User;
@@ -34,23 +35,7 @@ Route::prefix('v1')->group(function () {
             ->middleware('throttle:logins');
     });
 
-    // If you implemented feature flags, include ->middleware('module:inventory')
-    Route::prefix('inventory')->group(function () {
-        // Items
-        Route::get('/items', [InventoryController::class, 'index']);
-        Route::post('/items', [InventoryController::class, 'store'])->middleware('tenant.admin');
-        Route::get('/items/{item}', [InventoryController::class, 'show']);
-        Route::put('/items/{item}', [InventoryController::class, 'update'])->middleware('tenant.admin');
-        Route::delete('/items/{item}', [InventoryController::class, 'destroy'])->middleware('tenant.admin');
 
-        // Stock movements
-        Route::post('/stock/in', [StockController::class, 'stockIn'])->middleware('tenant.admin');
-        Route::post('/stock/out', [StockController::class, 'stockOut'])->middleware('tenant.admin');
-        Route::post('/stock/transfer', [StockController::class, 'transfer'])->middleware('tenant.admin');
-
-        // Optional: stock by item
-        Route::get('/items/{item}/stock', [StockController::class, 'stockForItem']);
-    });
 
     /*
     |--------------------------------------------------------------------------
@@ -59,6 +44,31 @@ Route::prefix('v1')->group(function () {
     */
     Route::middleware(['auth:sanctum', 'throttle:100,1'])->group(function () {
 
+        // If you implemented feature flags, include ->middleware('module:inventory')
+        Route::prefix('inventory')->group(function () {
+            // Items
+            Route::get('/items', [InventoryController::class, 'index']);
+            Route::post('/items', [InventoryController::class, 'store'])->middleware('tenant.admin');
+            Route::get('/items/{item}', [InventoryController::class, 'show']);
+            Route::put('/items/{item}', [InventoryController::class, 'update'])->middleware('tenant.admin');
+            Route::delete('/items/{item}', [InventoryController::class, 'destroy'])->middleware('tenant.admin');
+
+            // Stock movements
+            Route::post('/stock/in', [StockController::class, 'stockIn'])->middleware('tenant.admin');
+            Route::post('/stock/out', [StockController::class, 'stockOut'])->middleware('tenant.admin');
+            Route::post('/stock/transfer', [StockController::class, 'transfer'])->middleware('tenant.admin');
+
+            // Optional: stock by item
+            Route::get('/items/{item}/stock', [StockController::class, 'stockForItem']);
+
+            //Locations
+            Route::get('/locations', [InventoryLocationController::class, 'index']);
+            Route::post('/locations', [InventoryLocationController::class, 'store'])->middleware('tenant.admin');
+            Route::get('/locations/{location}',[InventoryLocationController::class, 'show']);
+            Route::put('/locations/{location}', [InventoryLocationController::class, 'update'])->middleware('tenant.admin');
+            Route::delete('/locations/{location}',[InventoryLocationController::class, 'destroy'])->middleware('tenant.admin');
+
+        });
         // Auth (PROTECTED)
         Route::prefix('auth')->group(function () {
             Route::post('/logout', [AuthController::class, 'logout']);
@@ -87,48 +97,53 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/create-demo-tenant', function () {
                 try {
-                    $existingTenant = Tenant::where('slug', 'demo-mining')->first();
+                    $existingTenant = Tenant::where('slug', 'demo-manufacturing')->first();
+                    //if tenant exists
                     if ($existingTenant) {
                         return response()->json([
                             'message' => 'Demo tenant already exists',
                             'tenant'  => $existingTenant,
                             'login_credentials' => [
-                                'email'       => 'admin@demo-mining.com',
+                                'email'       => 'admin@demo-manufacturing.com',
                                 'password'    => 'Password123!',
-                                'tenant_slug' => 'demo-mining',
+                                'tenant_slug' => 'demo-manufacturing',
                             ],
                         ]);
                     }
 
+                    //tenant
                     $tenant = Tenant::create([
-                        'name'            => 'Demo Mining Corp',
-                        'slug'            => 'demo-mining',
-                        'industry'        => 'mining',
+                        'name'            => 'Demo manufacturing Corp',
+                        'slug'            => 'demo-manufacturing',
+                        'industry'        => 'manufacturing',
                         'plan'            => 'professional',
                         'enabled_modules' => ['inventory', 'fleet', 'maintenance', 'safety'],
                         'max_users'       => 50,
-                        'admin_email'     => 'admin@demo-mining.com',
+                        'admin_email'     => 'admin@demo-manufacturing.com',
                         'is_active'       => true,
                         'primary_color'   => '#0ea5e9',
                         'trial_ends_at'   => now()->addDays(14),
                     ]);
 
+                    //admin
                     $user = User::create([
                         'tenant_id'       => $tenant->id,
                         'first_name'      => 'Admin',
                         'last_name'       => 'User',
-                        'email'           => 'admin@demo-mining.com',
+                        'email'           => 'admin@demo-manufacturing.com',
                         'password'        => bcrypt('Password123!'),
                         'job_title'       => 'System Administrator',
                         'is_tenant_admin' => true,
                         'is_active'       => true,
                     ]);
 
-                    $regularUser = User::create([
+                    //user under admin
+                    $regularUser = User::create(
+                        [
                         'tenant_id'       => $tenant->id,
-                        'first_name'      => 'John',
+                        'first_name'      => 'bob',
                         'last_name'       => 'Operator',
-                        'email'           => 'operator@demo-mining.com',
+                        'email'           => 'operator@demo-manufacturing.com',
                         'password'        => bcrypt('Password123!'),
                         'job_title'       => 'Equipment Operator',
                         'department'      => 'Operations',
@@ -142,15 +157,15 @@ Route::prefix('v1')->group(function () {
                         'users_created'  => 2,
                         'login_credentials' => [
                             'admin' => [
-                                'email'       => 'admin@demo-mining.com',
+                                'email'       => 'admin@demo-manufacturing.com',
                                 'password'    => 'Password123!',
-                                'tenant_slug' => 'demo-mining',
+                                'tenant_slug' => 'demo-manufacturing',
                                 'role'        => 'tenant_admin',
                             ],
                             'regular_user' => [
-                                'email'       => 'operator@demo-mining.com',
+                                'email'       => 'operator@demo-manufacturing.com',
                                 'password'    => 'Password123!',
-                                'tenant_slug' => 'demo-mining',
+                                'tenant_slug' => 'demo-manufacturing',
                                 'role'        => 'regular_user',
                             ],
                         ],
@@ -170,8 +185,8 @@ Route::prefix('v1')->group(function () {
             });
 
             Route::get('/reset-demo', function () {
-                User::where('email', 'like', '%demo-mining.com')->delete();
-                Tenant::where('slug', 'demo-mining')->delete();
+                User::where('email', 'like', '%demo-manufacturing.com')->delete();
+                Tenant::where('slug', 'demo-manufacturing')->delete();
                 return response()->json(['message' => 'Demo data reset']);
             });
         });

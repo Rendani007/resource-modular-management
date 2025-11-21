@@ -11,6 +11,8 @@ use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Middleware\HandleCors;
+
 
 return Application::configure(basePath: dirname(__DIR__))
    ->withRouting(
@@ -21,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
     apiPrefix: 'api',
 )
 ->withMiddleware(function (Middleware $middleware) {
+        // run CORS for every request
+        $middleware->append(HandleCors::class);
     $middleware->alias([
         'tenant'        => EnsureTenantAccess::class,
         'tenant.admin'  => EnsureTenantAdmin::class,
@@ -29,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
     // API group for token auth:
     $middleware->group('api', [
+        
         'throttle:api',
         SubstituteBindings::class,
         EnsureTenantAccess::class,
